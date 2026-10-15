@@ -70,8 +70,9 @@ and the docs-only brand layer adapted from
 vendor shared base CSS, search/buttons, or the navbar frame and announcement.
 The local layer uses Inter body text, Geist headings, warm neutral light/dark
 tokens, pill navigation and demo tabs, compact two-column Back/Next links, and
-the opal banner artwork. Fonts ship through pinned Fontsource packages; the
-artwork URL preserves the `/docs/xy` mount prefix. Banner content, dismissal state,
+the opal banner artwork without a white top-edge inset shadow. Fonts ship through
+pinned Fontsource packages; the artwork URL preserves the `/docs/xy` mount prefix.
+Banner content, dismissal state,
 and header-height tracking remain shared. Editorial selectors target `docs-*`
 hooks, avoiding live chart typography and data-series colors. Mobile navigation,
 the named closeable docs drawer, clipboard feedback, keyboard focus, and
