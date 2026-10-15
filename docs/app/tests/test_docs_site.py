@@ -1051,7 +1051,7 @@ def one_chart_preview():
         )
         assert rendered.count("xy-example-tab-list relative") == 1
         assert rendered.count("xy-example-tab cursor-pointer") == 2
-        assert rendered.count("relative w-full overflow-hidden rounded-xl") == 1
+        assert rendered.count("doc-demo-tab-card relative w-full overflow-hidden") == 1
         assert "flex w-full flex-col gap-2 overflow-hidden px-2 pb-2 pt-4" in rendered
         assert "w-full p-2 [&>div]:!m-0" in rendered
         assert "min-h-[430px] w-full p-2" not in rendered

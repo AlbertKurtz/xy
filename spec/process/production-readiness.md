@@ -63,22 +63,40 @@ leaf links and the mobile sidebar drawer remain available. The mobile drawer
 trigger is a named native button with visible keyboard focus. Footer navigation
 uses level-two section headings. Installation examples use subsections so code
 blocks cannot become invalid direct children of a list.
-The docs recolor consumes the reusable `reflex-site-shared` theme and components
-directly. XY keeps only its branding, navigation, and project-specific footer
-content; it must not vendor shared CSS, search/buttons, or the navbar frame and
-announcement. Unpublished shared changes are previewed with the editable-package
+The docs consume the reusable `reflex-site-shared` base theme and components
+directly. XY owns its branding, navigation, project-specific footer content,
+and the docs-only brand layer adapted from
+[Reflex PR #7549](https://github.com/reflex-dev/reflex/pull/7549). It must not
+vendor shared base CSS, search/buttons, or the navbar frame and announcement.
+The local layer uses Inter body text, Geist headings, warm neutral light/dark
+tokens, pill navigation and demo tabs, compact two-column Back/Next links, and
+the opal banner artwork. Fonts ship through pinned Fontsource packages; the
+artwork URL preserves the `/docs/xy` mount prefix. Banner content, dismissal state,
+and header-height tracking remain shared. Editorial selectors target `docs-*`
+hooks, avoiding live chart typography and data-series colors. Mobile navigation,
+the named closeable docs drawer, clipboard feedback, keyboard focus, and
+reduced-motion behavior remain required validation surfaces.
+Unpublished shared changes are previewed with the editable-package
 workflow in `docs/app/README.md`, followed by production compilation and the docs
-validators below. The Git lock remains portable; deployment of the neutral
-semantic styling requires updating that lock after the shared changes land.
+validators below. The portable Git lock includes the merged design's shared
+styling hooks and mobile drawer changes; update all Reflex monorepo packages
+together and validate the production app when refreshing it.
+`docs/app/tests/test_docs_layout.py` exercises the real shared layout for first,
+middle, and last pages, verifying the article styling hook, preserved content,
+adjacent link destinations, removal of empty placeholders, and Next's placement
+in the second grid column. These contracts must pass after shared-package updates.
+Long demo code disclosures fade to the same muted surface as their containing
+card in both color modes. The frontend lock must resolve the declared PostCSS
+version without an older override shadowing the framework's build dependency.
 The desktop XY docs navigation switches to a docs-specific disclosure below
 1280px, preserving Overview and Reflex Integration destinations. Desktop links
-expose the selected section through `aria-current="page"` without an active underline.
+expose the selected section through `aria-current="page"` and a neutral pill.
 Internal navbar destinations use client-side routing so page changes preserve
 announcement dismissal without a full document reload. Code blocks share
 Reflex docs' light/dark syntax themes and neutral surface tokens while retaining
-XY's accessible clipboard feedback. XY footer links and headings use the shared
-book-weight typography, actions use small shadows, and custom sidebar links use
-weight 475. Gallery previews, playground controls, API references, Markdown,
+XY's accessible clipboard feedback. XY footer links and headings use body
+typography and compact controls; sidebar links use normal weight, with medium
+weight for the active page. Gallery previews, playground controls, API references, Markdown,
 and demo UI text and borders use semantic theme tokens in both color modes.
 Chart canvases retain explicit white/black backgrounds to match their rendered
 plots; data-series colors remain chart-specific.
