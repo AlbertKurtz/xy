@@ -3029,8 +3029,23 @@ class Axes(PlotTypeMixin):
         if transform not in (None, "xaxis transform"):
             raise not_implemented("fill_between(transform=...)")
         check_unsupported(kwargs, "fill_between()")
+
+        from xy.components import _is_datetime_like
+
+        is_dt_x = False
+        if np.ma.isMaskedArray(x):
+            compressed = x.compressed()
+            if len(compressed) > 0 and _is_datetime_like(compressed):
+                is_dt_x = True
+            fill_val = np.datetime64("NaT", "ms") if is_dt_x else np.nan
+            raw_conv = unit_converted_values(x.filled(fill_val))
+            conv_x = np.ma.array(raw_conv, mask=x.mask)
+        else:
+            is_dt_x = _is_datetime_like(x)
+            conv_x = unit_converted_values(x)
+
         xv, upper, lower = np.broadcast_arrays(
-            _masked_float(unit_converted_values(x)),
+            _masked_float(conv_x),
             _masked_float(y1),
             _masked_float(y2),
         )
@@ -3085,24 +3100,23 @@ class Axes(PlotTypeMixin):
             if step is not None:
                 sx, su = _step_values(sx, su, step)
                 _sx, sl = _step_values(xv[start:end], sl, step)
-            entries.append(
-                self._add(
-                    "area",
-                    {
-                        "x": sx,
-                        "y": su,
-                        "kwargs": {
-                            "base": sl,
-                            "color": resolved_color,
-                            "opacity": float(alpha) if alpha is not None else 1.0,
-                            "line_width": float(rcParams["patch.linewidth"]) * self._point_scale(),
-                            "line_opacity": float(alpha) if alpha is not None else 1.0,
-                            "stroke_perimeter": True,
-                            "name": str(label) if label is not None and not entries else None,
-                        },
-                    },
-                )
-            )
+            area_dict = {
+                "x": sx,
+                "y": su,
+                "kwargs": {
+                    "base": sl,
+                    "color": resolved_color,
+                    "opacity": float(alpha) if alpha is not None else 1.0,
+                    "line_width": float(rcParams["patch.linewidth"]) * self._point_scale(),
+                    "line_opacity": float(alpha) if alpha is not None else 1.0,
+                    "stroke_perimeter": True,
+                    "name": str(label) if label is not None and not entries else None,
+                },
+            }
+            if is_dt_x:
+                area_dict["_orig_x"] = x
+
+            entries.append(self._add("area", area_dict))
         if interpolate:
             # A single selected point between deselected neighbors spans no
             # interval, but matplotlib still draws its interpolated wedge.
@@ -3131,27 +3145,22 @@ class Axes(PlotTypeMixin):
                                 su.append(cross_y)
                                 sl.append(cross_y)
                 if len(sx) >= 2:
-                    entries.append(
-                        self._add(
-                            "area",
-                            {
-                                "x": np.asarray(sx),
-                                "y": np.asarray(su),
-                                "kwargs": {
-                                    "base": np.asarray(sl),
-                                    "color": resolved_color,
-                                    "opacity": float(alpha) if alpha is not None else 1.0,
-                                    "line_width": float(rcParams["patch.linewidth"])
-                                    * self._point_scale(),
-                                    "line_opacity": float(alpha) if alpha is not None else 1.0,
-                                    "stroke_perimeter": True,
-                                    "name": str(label)
-                                    if label is not None and not entries
-                                    else None,
-                                },
-                            },
-                        )
-                    )
+                    interp_dict = {
+                        "x": np.asarray(sx),
+                        "y": np.asarray(su),
+                        "kwargs": {
+                            "base": np.asarray(sl),
+                            "color": resolved_color,
+                            "opacity": float(alpha) if alpha is not None else 1.0,
+                            "line_width": float(rcParams["patch.linewidth"]) * self._point_scale(),
+                            "line_opacity": float(alpha) if alpha is not None else 1.0,
+                            "stroke_perimeter": True,
+                            "name": str(label) if label is not None and not entries else None,
+                        },
+                    }
+                    if is_dt_x:
+                        interp_dict["_orig_x"] = x
+                    entries.append(self._add("area", interp_dict))
         if not entries:
             # Matplotlib still returns a collection handle, but there is no
             # polygon to retain when no pair of adjacent points is selected.
@@ -4318,7 +4327,12 @@ class Axes(PlotTypeMixin):
         from xy.components import _is_datetime_like
 
         key = "x" if axis == "x" else "y"
-        return any(key in entry and _is_datetime_like(entry[key]) for entry in self._entries)
+        orig_key = f"_orig_{key}"
+        return any(
+            (orig_key in entry and _is_datetime_like(entry[orig_key]))
+            or (key in entry and _is_datetime_like(entry[key]))
+            for entry in self._entries
+        )
 
     def _data_coordinate(self, value: Any, axis: str) -> Optional[float]:
         """A data-space coordinate as the engine's float — numbers directly,

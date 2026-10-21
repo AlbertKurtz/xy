@@ -112,6 +112,74 @@ def test_fill_between_uses_a_faint_full_perimeter_not_an_opaque_lower_line() -> 
     assert trace.style["line_opacity"] == pytest.approx(0.2)
 
 
+def test_fill_between_masked_datetime_breaks_polygon() -> None:
+    _fig, ax = plt.subplots()
+    dates = np.ma.masked_array(
+        [
+            datetime(2026, 1, 1),
+            datetime(2026, 1, 2),
+            datetime(2026, 1, 3),
+            datetime(2026, 1, 4),
+            datetime(2026, 1, 5),
+        ],
+        mask=[False, False, True, False, False],
+    )
+
+    ax.fill_between(cast(Any, dates), [1.0, 2.0, 1.5, 2.5, 3.0])
+
+    areas = [entry for entry in ax._entries if entry["kind"] == "area"]
+    assert len(areas) == 2
+
+    expected_1 = np.asarray(dates.data[:2], dtype="datetime64[ms]").astype(np.float64)
+    expected_2 = np.asarray(dates.data[3:], dtype="datetime64[ms]").astype(np.float64)
+    np.testing.assert_array_equal(areas[0]["x"], expected_1)
+    np.testing.assert_array_equal(areas[1]["x"], expected_2)
+
+
+def test_fill_between_masked_leading_datetime() -> None:
+    _fig, ax = plt.subplots()
+    dates = np.ma.masked_array(
+        [
+            datetime(2026, 1, 1),
+            datetime(2026, 1, 2),
+            datetime(2026, 1, 3),
+        ],
+        mask=[True, False, False],
+    )
+
+    ax.fill_between(cast(Any, dates), [1.0, 2.0, 3.0])
+
+    areas = [entry for entry in ax._entries if entry["kind"] == "area"]
+    assert len(areas) == 1
+    expected = np.asarray(dates.data[1:], dtype="datetime64[ms]").astype(np.float64)
+    np.testing.assert_array_equal(areas[0]["x"], expected)
+
+
+def test_fill_between_nat_breaks_polygon() -> None:
+    _fig, ax = plt.subplots()
+    dates = np.array(
+        ["2026-01-01", "2026-01-02", "NaT", "2026-01-04", "2026-01-05"],
+        dtype="datetime64[D]",
+    )
+
+    ax.fill_between(cast(Any, dates), [1.0, 2.0, 1.5, 2.5, 3.0])
+
+    areas = [entry for entry in ax._entries if entry["kind"] == "area"]
+    assert len(areas) == 2
+
+    expected_1 = dates[:2].astype("datetime64[ms]").astype(np.float64)
+    expected_2 = dates[3:].astype("datetime64[ms]").astype(np.float64)
+    np.testing.assert_array_equal(areas[0]["x"], expected_1)
+    np.testing.assert_array_equal(areas[1]["x"], expected_2)
+
+
+def test_fill_between_standalone_sets_datetime_axis() -> None:
+    _fig, ax = plt.subplots()
+    dates = [datetime(2026, 1, 1), datetime(2026, 1, 2)]
+    ax.fill_between(cast(Any, dates), [1.0, 2.0])
+    assert ax._axis_holds_datetimes("x")
+
+
 def test_fill_betweenx_static_export_joins_dense_triangle_strip(monkeypatch) -> None:
     from xy import _raster
 
@@ -143,70 +211,6 @@ def test_fill_betweenx_static_export_joins_each_disconnected_region() -> None:
     assert all(trace.style["joined_fill"] is True for trace in traces)
     svg = ax._build_chart(*fig._panel_px()).figure().to_svg()
     assert svg.count("<polygon") == len(traces)
-
-
-def _area_x(ax: plt.Axes) -> np.ndarray:
-    areas = [entry for entry in ax._entries if entry["kind"] == "area"]
-    assert len(areas) == 1
-    return np.asarray(areas[0]["x"], dtype=np.float64)
-
-
-def test_fill_between_accepts_python_datetimes() -> None:
-    _fig, ax = plt.subplots()
-    dates = [
-        datetime(2026, 1, 1, 12),
-        datetime(2026, 1, 2, 12),
-        datetime(2026, 1, 3, 12),
-    ]
-
-    ax.fill_between(cast(Any, dates), [1.0, 2.0, 1.5])
-
-    expected = np.asarray(dates, dtype="datetime64[ms]").astype(np.float64)
-    np.testing.assert_array_equal(_area_x(ax), expected)
-
-
-def test_fill_between_accepts_numpy_datetime64() -> None:
-    _fig, ax = plt.subplots()
-    dates = np.array(
-        ["2026-01-01", "2026-01-02", "2026-01-03"],
-        dtype="datetime64[D]",
-    )
-
-    ax.fill_between(dates, [1.0, 2.0, 1.5])
-
-    expected = dates.astype("datetime64[ms]").astype(np.float64)
-    np.testing.assert_array_equal(_area_x(ax), expected)
-
-
-def test_fill_between_masked_datetime_breaks_polygon() -> None:
-    _fig, ax = plt.subplots()
-    dates = np.ma.masked_array(
-        [
-            datetime(2026, 1, 1),
-            datetime(2026, 1, 2),
-            datetime(2026, 1, 3),
-            datetime(2026, 1, 4),
-        ],
-        mask=[False, False, True, False],
-    )
-
-    ax.fill_between(dates, [1.0, 2.0, 1.5, 2.5])
-
-    expected = np.asarray(dates.data[:2], dtype="datetime64[ms]").astype(np.float64)
-    np.testing.assert_array_equal(_area_x(ax), expected)
-
-
-def test_fill_between_nat_breaks_polygon() -> None:
-    _fig, ax = plt.subplots()
-    dates = np.array(
-        ["2026-01-01", "2026-01-02", "NaT", "2026-01-04"],
-        dtype="datetime64[D]",
-    )
-
-    ax.fill_between(dates, [1.0, 2.0, 1.5, 2.5])
-
-    expected = dates[:2].astype("datetime64[ms]").astype(np.float64)
-    np.testing.assert_array_equal(_area_x(ax), expected)
 
 
 def test_bar_categories_and_bottom() -> None:
