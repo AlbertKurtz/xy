@@ -3030,7 +3030,7 @@ class Axes(PlotTypeMixin):
             raise not_implemented("fill_between(transform=...)")
         check_unsupported(kwargs, "fill_between()")
         xv, upper, lower = np.broadcast_arrays(
-            _masked_float(x),
+            _masked_float(unit_converted_values(x)),
             _masked_float(y1),
             _masked_float(y2),
         )
