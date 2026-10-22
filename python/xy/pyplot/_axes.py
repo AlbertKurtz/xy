@@ -3032,17 +3032,25 @@ class Axes(PlotTypeMixin):
 
         from xy.components import _is_datetime_like
 
+        # Convert temporal x coordinates to epoch milliseconds while preserving
+        # masked entries and original metadata for datetime-axis detection.
         is_dt_x = False
         if np.ma.isMaskedArray(x):
             compressed = x.compressed()
-            if len(compressed) > 0 and _is_datetime_like(compressed):
+            if (len(compressed) > 0 and _is_datetime_like(compressed)) or _is_datetime_like(x.data):
                 is_dt_x = True
-            fill_val = np.datetime64("NaT", "ms") if is_dt_x else np.nan
-            raw_conv = unit_converted_values(x.filled(fill_val))
-            conv_x = np.ma.array(raw_conv, mask=x.mask)
+
+            if is_dt_x:
+                # Fill masked points with NaT so unit_converted_values transforms
+                # dates to float milliseconds without failing on MaskedConstant,
+                # then reapply the mask to break polygon intervals.
+                raw_conv = unit_converted_values(x.filled(np.datetime64("NaT", "ms")))
+                conv_x = np.ma.array(raw_conv, mask=x.mask)
+            else:
+                conv_x = x
         else:
             is_dt_x = _is_datetime_like(x)
-            conv_x = unit_converted_values(x)
+            conv_x = unit_converted_values(x) if is_dt_x else x
 
         xv, upper, lower = np.broadcast_arrays(
             _masked_float(conv_x),
@@ -4328,9 +4336,17 @@ class Axes(PlotTypeMixin):
 
         key = "x" if axis == "x" else "y"
         orig_key = f"_orig_{key}"
+
+        def _is_dt(val: Any) -> bool:
+            if np.ma.isMaskedArray(val):
+                comp = val.compressed()
+                if len(comp) > 0:
+                    return _is_datetime_like(comp)
+                return _is_datetime_like(val.data)
+            return _is_datetime_like(val)
+
         return any(
-            (orig_key in entry and _is_datetime_like(entry[orig_key]))
-            or (key in entry and _is_datetime_like(entry[key]))
+            (orig_key in entry and _is_dt(entry[orig_key])) or (key in entry and _is_dt(entry[key]))
             for entry in self._entries
         )
 
