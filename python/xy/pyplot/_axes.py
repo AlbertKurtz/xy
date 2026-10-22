@@ -3034,13 +3034,13 @@ class Axes(PlotTypeMixin):
 
         # Convert temporal x coordinates to epoch milliseconds while preserving
         # masked entries and original metadata for datetime-axis detection.
-        is_dt_x = False
+        is_datetime_x = False
         if np.ma.isMaskedArray(x):
             compressed = x.compressed()
             if (len(compressed) > 0 and _is_datetime_like(compressed)) or _is_datetime_like(x.data):
-                is_dt_x = True
+                is_datetime_x = True
 
-            if is_dt_x:
+            if is_datetime_x:
                 # Fill masked points with NaT so unit_converted_values transforms
                 # dates to float milliseconds without failing on MaskedConstant,
                 # then reapply the mask to break polygon intervals.
@@ -3049,8 +3049,8 @@ class Axes(PlotTypeMixin):
             else:
                 conv_x = x
         else:
-            is_dt_x = _is_datetime_like(x)
-            conv_x = unit_converted_values(x) if is_dt_x else x
+            is_datetime_x = _is_datetime_like(x)
+            conv_x = unit_converted_values(x) if is_datetime_x else x
 
         xv, upper, lower = np.broadcast_arrays(
             _masked_float(conv_x),
@@ -3121,7 +3121,7 @@ class Axes(PlotTypeMixin):
                     "name": str(label) if label is not None and not entries else None,
                 },
             }
-            if is_dt_x:
+            if is_datetime_x:
                 area_dict["_orig_x"] = x
 
             entries.append(self._add("area", area_dict))
@@ -3166,7 +3166,7 @@ class Axes(PlotTypeMixin):
                             "name": str(label) if label is not None and not entries else None,
                         },
                     }
-                    if is_dt_x:
+                    if is_datetime_x:
                         interp_dict["_orig_x"] = x
                     entries.append(self._add("area", interp_dict))
         if not entries:
@@ -4337,7 +4337,7 @@ class Axes(PlotTypeMixin):
         key = "x" if axis == "x" else "y"
         orig_key = f"_orig_{key}"
 
-        def _is_dt(val: Any) -> bool:
+        def _is_datetime_value(val: Any) -> bool:
             if np.ma.isMaskedArray(val):
                 comp = val.compressed()
                 if len(comp) > 0:
@@ -4346,7 +4346,8 @@ class Axes(PlotTypeMixin):
             return _is_datetime_like(val)
 
         return any(
-            (orig_key in entry and _is_dt(entry[orig_key])) or (key in entry and _is_dt(entry[key]))
+            (orig_key in entry and _is_datetime_value(entry[orig_key]))
+            or (key in entry and _is_datetime_value(entry[key]))
             for entry in self._entries
         )
 
