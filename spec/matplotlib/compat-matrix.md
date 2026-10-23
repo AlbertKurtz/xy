@@ -9,7 +9,7 @@ Corpus links are executable examples and are checked for every supported method.
 | Family | Level | Methods | Executable corpus |
 |---|---|---:|---:|
 | Basic | equivalent semantics | 22 | 49 |
-| Spans | exact geometry | 5 | 4 |
+| Spans | exact geometry | 5 | 5 |
 | Spectral | equivalent semantics | 9 | 2 |
 | Statistics | equivalent semantics | 5 | 2 |
 | Binned | exact geometry | 4 | 7 |
@@ -52,7 +52,7 @@ Approximation level: **equivalent semantics**.
 
 Approximation level: **exact geometry**.
 
-- `axhline` — [`23_axhline_axvline.py`](../../tests/pyplot/corpus/23_axhline_axvline.py), [`34_gray_string_color.py`](../../tests/pyplot/corpus/34_gray_string_color.py)
+- `axhline` — [`23_axhline_axvline.py`](../../tests/pyplot/corpus/23_axhline_axvline.py), [`34_gray_string_color.py`](../../tests/pyplot/corpus/34_gray_string_color.py), [`56_fill_between_datetime.py`](../../tests/pyplot/corpus/56_fill_between_datetime.py)
 - `axhspan` — [`24_axvspan_band.py`](../../tests/pyplot/corpus/24_axvspan_band.py)
 - `axvline` — [`23_axhline_axvline.py`](../../tests/pyplot/corpus/23_axhline_axvline.py)
 - `axvspan` — [`24_axvspan_band.py`](../../tests/pyplot/corpus/24_axvspan_band.py)

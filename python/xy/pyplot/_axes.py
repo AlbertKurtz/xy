@@ -1505,11 +1505,14 @@ class Axes(PlotTypeMixin):
 
     def _invalidate(self) -> None:
         host = self._y2_of or self
-        host._chart = None
         # Shared render domains are a snapshot from the preceding Figure
         # materialization pass. Any artist/limit mutation must make the next
         # pass discover the group's new final view before clipping axlines.
-        host.__dict__.pop("_shared_render_domains", None)
+        # Date units are inferred across shared x axes too: a sibling cached
+        # before a date artist was added or removed must refresh its ticks.
+        for ax in _SharedAxesGroup("x").get_siblings(host):
+            ax._chart = None
+            ax.__dict__.pop("_shared_render_domains", None)
         if host.figure is not None:
             host.figure._invalidate()
 
@@ -3187,7 +3190,7 @@ class Axes(PlotTypeMixin):
                 },
             }
             return PolyCollection(self, empty)
-        return PolyCollection(self, entries[0])
+        return PolyCollection(self, entries[0], companion_entries=entries[1:])
 
     def imshow(self, z: ArrayLike, cmap: Any = None, **kwargs: Any) -> AxesImage:
         """Display a 2-D scalar array or RGB(A) image.
@@ -4331,7 +4334,7 @@ class Axes(PlotTypeMixin):
         self._figure_rect = _parse_bounds(position, "set_position()")
         self._invalidate()
 
-    def _axis_holds_datetimes(self, axis: str) -> bool:
+    def _axis_holds_datetimes(self, axis: str, *, shared: bool = False) -> bool:
         from xy.components import _is_datetime_like
 
         key = "x" if axis == "x" else "y"
@@ -4348,7 +4351,8 @@ class Axes(PlotTypeMixin):
         return any(
             (orig_key in entry and _is_datetime_value(entry[orig_key]))
             or (key in entry and _is_datetime_value(entry[key]))
-            for entry in self._entries
+            for ax in (_SharedAxesGroup(axis).get_siblings(self) if shared else [self])
+            for entry in ax._entries
         )
 
     def _data_coordinate(self, value: Any, axis: str) -> Optional[float]:
@@ -8548,7 +8552,9 @@ class Axes(PlotTypeMixin):
         # fill_between retains datetime identity after converting its geometry
         # to f64 milliseconds. Carry it into the rendered axis (dossier §16),
         # without overriding explicit scales or persisting an inferred type.
-        if self._scale_specs["x"]["name"] == "linear" and self._axis_holds_datetimes("x"):
+        if self._scale_specs["x"]["name"] == "linear" and self._axis_holds_datetimes(
+            "x", shared=True
+        ):
             x_props.setdefault("type_", "time")
         rotation_source = self._shared_ticker_source("x")
         if (
