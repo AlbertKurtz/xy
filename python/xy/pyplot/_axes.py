@@ -8545,6 +8545,11 @@ class Axes(PlotTypeMixin):
         y_props = {k: v for k, v in self._axis["y"].items() if v is not None}
         self._inherit_shared_axis_state("x", x_props)
         self._inherit_shared_axis_state("y", y_props)
+        # fill_between retains datetime identity after converting its geometry
+        # to f64 milliseconds. Carry it into the rendered axis (dossier §16),
+        # without overriding explicit scales or persisting an inferred type.
+        if self._scale_specs["x"]["name"] == "linear" and self._axis_holds_datetimes("x"):
+            x_props.setdefault("type_", "time")
         rotation_source = self._shared_ticker_source("x")
         if (
             rotation_source._tick_rotation_modes.get("x") == "xtick"

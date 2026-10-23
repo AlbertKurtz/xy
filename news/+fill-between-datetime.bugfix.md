@@ -1,1 +1,1 @@
-Fixed `xy.pyplot.fill_between` raising a `TypeError` when passed `datetime`, `datetime64`, or masked date sequences.
+Fixed `xy.pyplot.fill_between` raising a `TypeError` when passed `datetime`, `datetime64`, or masked date sequences. Standalone datetime fills now render calendar tick labels without requiring a line overlay.

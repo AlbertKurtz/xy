@@ -219,19 +219,50 @@ def test_fill_between_masked_integers_breaks_polygon() -> None:
     np.testing.assert_array_equal(areas[1]["x"], np.array([4.0, 5.0]))
 
 
-def test_fill_between_standalone_sets_datetime_axis() -> None:
-    _fig, ax = plt.subplots()
-    dates = [datetime(2026, 1, 1), datetime(2026, 1, 2)]
-    ax.fill_between(cast(Any, dates), [1.0, 2.0])
-    assert ax._axis_holds_datetimes("x")
+@pytest.mark.parametrize("date_kind", ["python", "numpy", "masked"])
+@pytest.mark.parametrize("fill_kind", ["ordinary", "step", "interpolate"])
+def test_fill_between_standalone_sets_datetime_axis(date_kind: str, fill_kind: str) -> None:
+    fig, ax = plt.subplots()
+    dates: Any = [datetime(2026, 1, day) for day in range(1, 6)]
+    if date_kind == "numpy":
+        dates = np.asarray(dates, dtype="datetime64[D]")
+    elif date_kind == "masked":
+        dates = np.ma.masked_array(dates, mask=[True, False, False, False, False])
+    options: dict[str, Any] = {}
+    if fill_kind == "step":
+        options["step"] = "mid"
+    elif fill_kind == "interpolate":
+        options.update(where=[False, False, True, False, False], interpolate=True)
+    ax.fill_between(dates, [-1.0, -1.0, 1.0, -1.0, -1.0], **options)
 
-    _fig2, ax2 = plt.subplots()
-    masked_dates = np.ma.masked_array(
-        [datetime(2026, 1, 1), datetime(2026, 1, 2), datetime(2026, 1, 3)],
-        mask=[True, False, False],
-    )
-    ax2.fill_between(cast(Any, masked_dates), [1.0, 2.0, 3.0])
-    assert ax2._axis_holds_datetimes("x")
+    engine = ax._build_chart(*fig._panel_px()).figure()
+    payload, _ = engine.build_payload()
+    assert payload["x_axis"]["kind"] == "time"
+    assert payload["y_axis"]["kind"] == "linear"
+    assert "1.8e12" not in engine.to_svg()
+
+
+@pytest.mark.parametrize("scale", ["log", "symlog"])
+def test_fill_between_datetime_respects_explicit_scale(scale: str) -> None:
+    _fig, ax = plt.subplots()
+    ax.fill_between(cast(Any, [datetime(2026, 1, 1), datetime(2026, 1, 2)]), [1.0, 2.0])
+    ax.set_xscale(scale)
+    payload, _ = ax._build_chart(640, 480).figure().build_payload()
+    assert payload["x_axis"]["kind"] != "time"
+    ax.set_xscale("linear")
+    payload, _ = ax._build_chart(640, 480).figure().build_payload()
+    assert payload["x_axis"]["kind"] == "time"
+
+
+def test_removed_datetime_fill_does_not_leave_numeric_axis_as_time() -> None:
+    _fig, ax = plt.subplots()
+    fill = ax.fill_between(cast(Any, [datetime(2026, 1, 1), datetime(2026, 1, 2)]), [1.0, 2.0])
+    payload, _ = ax._build_chart(640, 480).figure().build_payload()
+    assert payload["x_axis"]["kind"] == "time"
+    fill.remove()
+    ax.fill_between([0.0, 1.0], [1.0, 2.0])
+    payload, _ = ax._build_chart(640, 480).figure().build_payload()
+    assert payload["x_axis"]["kind"] == "linear"
 
 
 def test_fill_betweenx_static_export_joins_dense_triangle_strip(monkeypatch) -> None:

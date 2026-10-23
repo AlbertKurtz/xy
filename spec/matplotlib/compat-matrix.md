@@ -8,7 +8,7 @@ Corpus links are executable examples and are checked for every supported method.
 
 | Family | Level | Methods | Executable corpus |
 |---|---|---:|---:|
-| Basic | equivalent semantics | 22 | 48 |
+| Basic | equivalent semantics | 22 | 49 |
 | Spans | exact geometry | 5 | 4 |
 | Spectral | equivalent semantics | 9 | 2 |
 | Statistics | equivalent semantics | 5 | 2 |
@@ -32,7 +32,7 @@ Approximation level: **equivalent semantics**.
 - `loglog` — [`51_basic_2d_aliases.py`](../../tests/pyplot/corpus/51_basic_2d_aliases.py)
 - `semilogx` — [`54_plotting_method_coverage.py`](../../tests/pyplot/corpus/54_plotting_method_coverage.py)
 - `semilogy` — [`54_plotting_method_coverage.py`](../../tests/pyplot/corpus/54_plotting_method_coverage.py)
-- `fill_between` — [`20_fill_between_band.py`](../../tests/pyplot/corpus/20_fill_between_band.py)
+- `fill_between` — [`20_fill_between_band.py`](../../tests/pyplot/corpus/20_fill_between_band.py), [`56_fill_between_datetime.py`](../../tests/pyplot/corpus/56_fill_between_datetime.py)
 - `fill_betweenx` — [`51_basic_2d_aliases.py`](../../tests/pyplot/corpus/51_basic_2d_aliases.py)
 - `bar` — [`14_bar_categories.py`](../../tests/pyplot/corpus/14_bar_categories.py), [`15_bar_stacked_bottom.py`](../../tests/pyplot/corpus/15_bar_stacked_bottom.py), [`27_subplots_2x2_mixed.py`](../../tests/pyplot/corpus/27_subplots_2x2_mixed.py), [`32_xticks_rotation.py`](../../tests/pyplot/corpus/32_xticks_rotation.py), [`42_tick_params_rotation.py`](../../tests/pyplot/corpus/42_tick_params_rotation.py), [`55_polar_projection.py`](../../tests/pyplot/corpus/55_polar_projection.py)
 - `barh` — [`16_barh.py`](../../tests/pyplot/corpus/16_barh.py)
