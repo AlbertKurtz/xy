@@ -30,6 +30,9 @@ The dual-engine runner executes every corpus case in a fresh process. Its
 reference harness only normalizes renderer-specific HTML export and xy's
 dependency-free `triangles=` shorthand into Matplotlib's equivalent
 `Triangulation` positional form; chart data and plotting options are unchanged.
+PNG comparison captures the current figure at the end of each case. Examples
+that need independent visual coverage belong in separate corpus files; the
+datetime fill, shared-date axes, and removal scenarios each have their own case.
 
 ## Approximation levels
 

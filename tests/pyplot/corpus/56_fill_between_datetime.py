@@ -1,4 +1,4 @@
-"""Temporal fills retain date ticks, share units, and remove every region."""
+"""Standalone temporal fills retain date ticks without a line overlay."""
 
 from datetime import datetime, timedelta
 
@@ -16,20 +16,3 @@ axes[1].set_title("NumPy datetime steps")
 masked_dates = np.ma.masked_array(dates, mask=[False, False, False, True, False, False, False])
 axes[2].fill_between(masked_dates, upper, alpha=0.35)
 axes[2].set_title("Masked datetime gaps")
-
-shared_fig, shared_axes = plt.subplots(2, 1, sharex=True, figsize=(7, 6))
-shared_axes[1].axhline(1, color="purple")
-# Render before adding dates to exercise shared-axis cache refresh.
-shared_fig.canvas.draw()
-shared_axes[0].fill_between(masked_dates, upper, alpha=0.35)
-shared_axes[0].set_title("Shared dates: labels on the panel without date data")
-
-replacement_fig, replacement_ax = plt.subplots()
-removed = replacement_ax.fill_between(masked_dates, upper)
-replacement_fig.canvas.draw()
-removed.remove()
-replacement_ax.fill_between([0, 1, 2], [1, 2, 1], alpha=0.35)
-# Matplotlib retains removed artists' data limits until explicitly reset.
-replacement_ax.set_xlim(-0.1, 2.1)
-replacement_ax.set_ylim(0, 3)
-replacement_ax.set_title("All date regions removed: numeric replacement")
