@@ -1583,7 +1583,7 @@ def test_first_chart_shows_clean_code_with_hidden_live_previews(
 
 
 def test_installation_uses_uv_first_package_manager_tabs() -> None:
-    """Present install commands as tabs with uv selected by default."""
+    """Present base and Matplotlib-extra installs with uv selected first."""
     source_path = DOCS_ROOT / "overview" / "installation.md"
     rendered = str(
         render_markdown(
@@ -1593,11 +1593,14 @@ def test_installation_uses_uv_first_package_manager_tabs() -> None:
         )
     )
 
-    assert 'defaultValue:"tab1"' in rendered
-    assert rendered.count('className:"pill-tab"') == 2
-    assert rendered.index('value:"tab1"},"uv"') < rendered.index('value:"tab2"},"pip"')
+    assert rendered.count('defaultValue:"tab1"') == 2
+    assert rendered.count('className:"pill-tab"') == 4
+    assert rendered.count('value:"tab1"},"uv"') == 2
+    assert rendered.count('value:"tab2"},"pip"') == 2
     assert 'code:"uv add xy"' in rendered
     assert 'code:"python -m pip install xy"' in rendered
+    assert 'code:"uv add \\"xy[matplotlib]\\""' in rendered
+    assert 'code:"python -m pip install \\"xy[matplotlib]\\""' in rendered
 
 
 def test_installation_distinguishes_supported_targets_from_pypi_artifacts() -> None:
@@ -3197,6 +3200,7 @@ def test_installation_options_render_as_subsections_with_commands() -> None:
     blocks = parse_document(source.read_text(encoding="utf-8")).blocks
     headings = [block for block in blocks if isinstance(block, HeadingBlock) and block.level == 3]
     assert [heading.children[0].text for heading in headings] == [
+        "Matplotlib compatibility",
         "Arrow input",
         "Reflex integration",
         "Optional browser export",
@@ -3206,5 +3210,11 @@ def test_installation_options_render_as_subsections_with_commands() -> None:
         if node.tag in {"ul", "ol", "RadixThemesUnorderedList", "RadixThemesOrderedList"}:
             assert all(child.tag in item_tags for child in node.children)
     rendered = str(component)
-    for command in ("uv add pyarrow", 'uv add "xy[reflex]"', 'python -m pip install "xy[reflex]"'):
+    for command in (
+        'uv add "xy[matplotlib]"',
+        'python -m pip install "xy[matplotlib]"',
+        "uv add pyarrow",
+        'uv add "xy[reflex]"',
+        'python -m pip install "xy[reflex]"',
+    ):
         assert f"code:{json.dumps(command)}" in rendered
