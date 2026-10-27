@@ -130,3 +130,43 @@ def test_subplot_shared_property_store_inherits_date_units() -> None:
     assert all(
         chart.figure().build_payload()[0]["x_axis"]["kind"] == "linear" for chart in fig._charts()
     )
+
+
+@pytest.mark.parametrize("split", ["ordinary", "where", "interpolate"])
+def test_datetime_fill_axis_is_independent_of_later_input_mutation(split: str) -> None:
+    from datetime import datetime
+
+    dates: list[Any] = [datetime(2026, 1, day) for day in range(1, 8)]
+    expected = np.asarray(dates, dtype="datetime64[ms]").astype(np.float64)
+    options: dict[str, Any] = {}
+    values = np.ones(7)
+    if split == "where":
+        options["where"] = [True, True, True, False, True, True, True]
+    elif split == "interpolate":
+        values = np.array([-1, 1, -1, -1, -1, 1, -1])
+        options.update(where=values > 0, interpolate=True)
+    fig, axes = plt.subplots(2, 1, sharex=True)
+    fill = axes[0].fill_between(dates, values, **options)
+    stored_x = [entry["x"].copy() for entry in axes[0]._entries]
+    dates[:] = list(range(7))
+    for chart in fig._charts():
+        assert chart.figure().build_payload()[0]["x_axis"]["kind"] == "time"
+    for entry, original in zip(axes[0]._entries, stored_x, strict=True):
+        np.testing.assert_array_equal(entry["x"], original)
+        assert np.min(entry["x"]) >= expected[0]
+    fill.remove()
+    assert not axes[0]._axis_holds_datetimes("x")
+
+
+def test_datetime_fill_does_not_keep_the_source_array_alive() -> None:
+    import gc
+    import weakref
+
+    dates = np.arange("2026-01-01", "2026-01-08", dtype="datetime64[D]")
+    reference = weakref.ref(dates)
+    fig, ax = plt.subplots()
+    ax.fill_between(dates, [1] * 7, where=[True, True, True, False, True, True, True])
+    del dates
+    gc.collect()
+    assert reference() is None
+    assert fig._charts()[0].figure().build_payload()[0]["x_axis"]["kind"] == "time"

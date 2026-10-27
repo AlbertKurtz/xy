@@ -3184,7 +3184,7 @@ class Axes(PlotTypeMixin):
         from xy.components import _is_datetime_like
 
         # Convert temporal x coordinates to epoch milliseconds while preserving
-        # masked entries and original metadata for datetime-axis detection.
+        # masked entries and snapshot metadata for datetime-axis detection.
         is_datetime_x = False
         if np.ma.isMaskedArray(x):
             compressed = x.compressed()
@@ -3273,7 +3273,7 @@ class Axes(PlotTypeMixin):
                 },
             }
             if is_datetime_x:
-                area_dict["_orig_x"] = x
+                area_dict["_datetime_x"] = True
 
             entries.append(self._add("area", area_dict))
         if interpolate:
@@ -3318,7 +3318,7 @@ class Axes(PlotTypeMixin):
                         },
                     }
                     if is_datetime_x:
-                        interp_dict["_orig_x"] = x
+                        interp_dict["_datetime_x"] = True
                     entries.append(self._add("area", interp_dict))
         if not entries:
             # Matplotlib still returns a collection handle, but there is no
@@ -4487,7 +4487,7 @@ class Axes(PlotTypeMixin):
         from xy.components import _is_datetime_like
 
         key = "x" if axis == "x" else "y"
-        orig_key = f"_orig_{key}"
+        datetime_key = f"_datetime_{key}"
 
         def _is_datetime_value(val: Any) -> bool:
             if np.ma.isMaskedArray(val):
@@ -4498,8 +4498,7 @@ class Axes(PlotTypeMixin):
             return _is_datetime_like(val)
 
         return any(
-            (orig_key in entry and _is_datetime_value(entry[orig_key]))
-            or (key in entry and _is_datetime_value(entry[key]))
+            entry.get(datetime_key, False) or (key in entry and _is_datetime_value(entry[key]))
             for ax in (_SharedAxesGroup(axis).get_siblings(self) if shared else [self])
             for entry in ax._entries
         )
